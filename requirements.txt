@@ -1,0 +1,5 @@
+fastapi
+uvicorn
+unidecode
+fuzzywuzzy
+python-Levenshtein
