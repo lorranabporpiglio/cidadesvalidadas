@@ -1,10 +1,11 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from unidecode import unidecode 
+from unidecode import unidecode
 
 app = FastAPI()
 
-cities_list = [unidecode(city).lower() for city in [
+# Lista de cidades aprovadas
+approved_cities = [unidecode(city).lower() for city in [
     "Abaetetuba", "Abreu e Lima", "Açailândia", "Acaraú", "Águas Lindas de Goiás", "Alagoinhas", "Alegrete", "Alenquer", "Alfenas", "Almirante Tamandaré", "Altamira", "Alvorada", "Americana", "Amparo", "Ananindeua", "Anápolis", "Angra dos Reis", "Aparecida de Goiânia", "Apucarana", "Aquiraz", "Aracaju", "Aracati", "Aracruz", "Araguaína", "Araguari", "Arapiraca", "Araranguá", "Araras", "Araripina", "Araruama", "Araucária", "Araxá", "Arcoverde", "Ariquemes", "Arujá", "Assis", "Atibaia", "Avaré",
     "Bacabal", "Bagé", "Balneário Camboriú", "Balsas", "Barbacena", "Barbalha", "Barcarena", "Barra do Corda", "Barra do Garças", "Barra do Piraí", "Barra Mansa", "Barreiras", "Barreirinhas", "Barretos", "Barueri", "Bauru", "Bayeux", "Bebedouro", "Belém", "Belford Roxo", "Belo Horizonte", "Belo Jardim", "Benevides", "Bento Gonçalves", "Bertioga", "Betim", "Bezerros", "Biguaçu", "Birigui", "Blumenau", "Boa Vista", "Boituva", "Bom Jesus da Lapa", "Botucatu", "Brasília", "Bragança", "Bragança Paulista", "Breves", "Brumado", "Brusque",
     "Cabedelo", "Cabo de Santo Agostinho", "Cabo Frio", "Caçador", "Caçapava", "Cáceres", "Cachoeira do Sul", "Cachoeirinha", "Cachoeiro de Itapemirim", "Cacoal", "Caicó", "Caieiras", "Cajamar", "Cajazeiras", "Caldas Novas", "Camaçari", "Camaquã", "Camaragibe", "Camboriú", "Cametá", "Camocim", "Campina Grande", "Campo Bom", "Campo Formoso", "Campo Largo", "Campo Limpo Paulista", "Campo Mourão", "Campos dos Goytacazes", "Canaã dos Carajás", "Candeias", "Canindé", "Canoas", "Capanema", "Capão da Canoa", "Caraguatatuba", "Carapicuíba", "Caratinga", "Carazinho", "Cariacica", "Carpina", "Caruaru", "Casa Nova", "Cascavel", "Castanhal", "Castro", "Cataguases", "Catalão", "Catanduva", "Caucaia", "Caxias", "Caxias do Sul", "Ceará-Mirim", "Chapadinha", "Cianorte", "Cidade Ocidental", "Coari", "Codó", "Colatina", "Colombo", "Conceição do Coité", "Concórdia", "Conselheiro Lafaiete", "Contagem", "Coronel Fabriciano", "Corumbá", "Cotia", "Crateús", "Crato", "Criciúma", "Cristalina", "Cruz das Almas", "Cruzeiro", "Cruzeiro do Sul", "Cubatão", "Curvelo",
@@ -28,17 +29,41 @@ cities_list = [unidecode(city).lower() for city in [
     "Vacaria", "Valença", "Valença", "Valparaíso de Goiás", "Varginha", "Várzea Grande", "Várzea Paulista", "Venâncio Aires", "Vespasiano", "Viamão", "Viana", "Viçosa", "Vila Velha", "Vilhena", "Vitória", "Vitória da Conquista", "Vitória de Santo Antão", "Volta Redonda", "Votorantim", "Votuporanga"
 ]]
 
+# Lista de cidades em operação
+operating_cities = [unidecode(city).lower() for city in [
+    "Lavras", "Rondonópolis", "Umuarama", "Guarapuava", "Londrina", "Cambé", "Maringá", "Foz de Iguaçu", "Chapecó", "Campinas", "São José do Rio Preto", "Vinhedo", "São José dos Campos"
+]]
+
+# Lista de cidades em implantação
+deploying_cities = [unidecode(city).lower() for city in [
+    "Formosa", "Aparecida de Goiânia", "Uberlandia", "Poços de Calda", "Campo Grande" "Corumbá", "Dourados", "Sinop", "Sorriso", "Cuiabá", "Primavera do Leste", "Toledo ", "Curitiba", "Ponta Grossa ", "Arapongas ", "São José Dos Pinhais", "Cidade do leste ", "Porto Alegre", "Sorocaba", "Piracicaba", "Araçatuba", "Bauru", "Ribeirão preto", "Araraquara ", "Franca", "Taubaté", "Limeira", "Presidente Prudente", "Americana"
+]]
+
 class MessageRequest(BaseModel):
     city: str
 
-def is_city_valid(city_name: str) -> bool:
+def check_city_status(city_name: str) -> str:
     normalized_city = unidecode(city_name).lower()
-    return normalized_city in cities_list
+
+    if normalized_city in approved_cities:
+        return "approved"
+    elif normalized_city in operating_cities:
+        return "operating"
+    elif normalized_city in deploying_cities:
+        return "deploying"
+    else:
+        return "not_found"
 
 @app.post("/verify_city")
 async def verify_city(message_request: MessageRequest):
     city_name = message_request.city
-    if is_city_valid(city_name):
+    status = check_city_status(city_name)
+
+    if status == "approved":
         return {"status": "success", "message": f"A cidade {city_name} está aprovada!"}
+    elif status == "operating":
+        return {"status": "operating", "message": f"A cidade {city_name} está em operação!"}
+    elif status == "deploying":
+        return {"status": "deploying", "message": f"A cidade {city_name} está em implantação!"}
     else:
         return {"status": "failure", "message": f"A cidade {city_name} não está aprovada."}
